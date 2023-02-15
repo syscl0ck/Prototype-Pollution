@@ -8,32 +8,38 @@ function validateSession(token){
     return false
 }
 
-function db_get_user(userID){
+function dbGetUser(userID){
     // Fake database that fetches user from ID
     let db=[
         {username: 'user1', phoneNumber: '111-111-1111', id: 1},
-        {username: 'user2', phoneNumber: '222-222-2222', id: 2}
+        {username: 'user2', phoneNumber: '222-222-2222', id: 2},
+        {username: 'megaAdmin', phoneNumber: '999-999-9999', id: 0, is_admin: true}
     ]
     return db[userID-1];
 }
 
-function db_write_user(userOriginal, userUpdated){
+function dbWriteUser(userOriginal, userUpdated){
     // Since the database is mock, we will simply leave the write
     // action as a stub. 
     return true;
 }
 
-/*
-Recursive (AKA Deep) Merge - UNSAFE 
-*/
+function isObject(obj){
+    return obj && obj.constructor && obj.constructor === Object;
+}
+
+// Recursive (AKA Deep) Merge - UNSAFE 
 function merge(source, destination){
     Object.entries(source).forEach(([key, value]) => {
         // Check if destination has subobject
-        if(destination[key] != undefined)
+        if(isObject(source[key]) && isObject(destination[key])){
             // Recursion
             merge(source[key], destination[key])
+        }
+        else{
         // Otherwise copy the value into destination and continue
         destination[key] = value;
+        }
     })
 }
 
@@ -52,15 +58,16 @@ function handleAPI(request){
         if(!userSettings["username"] || !userSettings["phoneNumber"] || !userSettings["favoritePizza"])
             return "400 Bad Request";
         
-        let user = db_get_user(userID);
+        let user = dbGetUser(userID);
         // Just for this example, we print whether the user object has
         // the is_admin property, which may allow the account to perform
         // privileged actions in some applications. 
-        console.log("User is admin: " + user.is_admin);
+        if(user.is_admin)
+            console.log(`User '${user.username}' is admin.`);
         // Note that an attacker's request causes this property to be populated,
         // even though the is_admin property was only ever written to the 
         // request object (not the user object).
-        db_write_user(user, userSettings);
+        dbWriteUser(user, userSettings);
         return "200 OK";
     }
 }
